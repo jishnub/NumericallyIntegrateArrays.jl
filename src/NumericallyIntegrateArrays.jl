@@ -1,4 +1,4 @@
-module NumericallyIntegrateArray
+module NumericallyIntegrateArrays
 using OffsetArrays
 
 # package code goes here
