@@ -35,9 +35,9 @@ function simps(y::AbstractVector,dx::Real=1;even="avg")
 end
 
 # Regular grid for nD array
-function simps(y::AbstractArray,dx::Real=1;even="avg")
+function simps(y::AbstractArray,dx::Real=1;even="avg",axis=1)
 
-	if iseven(size(y,1))
+	if iseven(size(y,axis))
 		if !(even ∈ ("avg","first","last"))
 			error("even has to be one of avg, first or last."*
 				"Specified even is $(even)")
@@ -45,20 +45,26 @@ function simps(y::AbstractArray,dx::Real=1;even="avg")
 
 		T = promote_type(eltype(y), Float64)
 
-		remaining_axes = CartesianIndices(axes(y)[2:end])
-		result = zeros(T,remaining_axes.indices)
-		val = zeros(T,remaining_axes.indices)
+		leading_axes = CartesianIndices(axes(y)[1:axis-1])
+		trailing_axes = CartesianIndices(axes(y)[axis+1:end])
 
-		first_ind = first(axes(y,1))
-		last_ind = last(axes(y,1))
+		result = zeros(T,leading_axes.indices...,trailing_axes.indices...)
+		val = zeros(T,leading_axes.indices...,trailing_axes.indices...)
+
+		first_ind = first(axes(y,axis))
+		last_ind = last(axes(y,axis))
 
 		if even ∈ ["avg","first"]
-			result .+= simpsRegular1D(view(y,first_ind:last_ind-1,remaining_axes),dx)
-			val .+= trapzRegular1D(view(y,last_ind-1:last_ind,remaining_axes),dx)
+			result .+= simpsRegular1D(view(y,leading_axes,first_ind:last_ind-1,trailing_axes),
+						dx,axis=axis)
+			val .+= trapzRegular1D(view(y,leading_axes,last_ind-1:last_ind,trailing_axes),
+						dx,axis=axis)
 		end
 		if even ∈ ["avg","last"]
-			result .+= simpsRegular1D(view(y,first_ind+1:last_ind,remaining_axes),dx)
-			val .+= trapzRegular1D(view(y,first_ind:first_ind+1,remaining_axes),dx)
+			result .+= simpsRegular1D(view(y,leading_axes,first_ind+1:last_ind,trailing_axes),
+						dx,axis=axis)
+			val .+= trapzRegular1D(view(y,leading_axes,first_ind:first_ind+1,trailing_axes),
+						dx,axis=axis)
 		end
 		if even == "avg"
 			val ./= 2
@@ -66,7 +72,7 @@ function simps(y::AbstractArray,dx::Real=1;even="avg")
 		end
 		result .+= val
 	else
-		result = simpsRegular1D(y,dx)
+		result = simpsRegular1D(y,dx,axis=axis)
 	end
 	return result 
 end
@@ -112,34 +118,41 @@ function simps(y::AbstractVector,x::AbstractVector{<:Real};even="avg")
 end
 
 # Irregular grid for nD array
-function simps(y::AbstractArray,x::AbstractVector{<:Real};even="avg")
+function simps(y::AbstractArray,x::AbstractVector{<:Real};even="avg",axis=1)
 
-	if iseven(size(y,1))
+	if iseven(size(y,axis))
 		if !(even ∈ ("avg","first","last"))
 			error("even has to be one of avg, first or last."*
 				"Specified even is $(even)")
 		end
 
 		T = promote_type(eltype(y), Float64)
-		remaining_axes = CartesianIndices(axes(y)[2:end])
-		result = zeros(T,remaining_axes.indices)
-		val = zeros(T,remaining_axes.indices)
-		first_ind = first(axes(y,1))
-		last_ind = last(axes(y,1))
+		
+		leading_axes = CartesianIndices(axes(y)[1:axis-1])
+		trailing_axes = CartesianIndices(axes(y)[axis+1:end])
+
+		result = zeros(T,leading_axes.indices...,trailing_axes.indices...)
+		val = zeros(T,leading_axes.indices...,trailing_axes.indices...)
+
+		first_ind = first(axes(y,axis))
+		last_ind = last(axes(y,axis))
+
 		first_ind_x = first(axes(x,1))
 		last_ind_x = last(axes(x,1))
 
 		if even ∈ ["avg","first"]
-			result .+= simpsIrregular1D(view(y,first_ind:last_ind-1,remaining_axes),
-				view(x,first_ind_x:last_ind_x-1))
-			val .+= trapzRegular1D(view(y,last_ind-1:last_ind,remaining_axes),
-				x[last_ind_x]-x[last_ind_x-1])
+			result .+= simpsIrregular1D(view(y,leading_axes,first_ind:last_ind-1,trailing_axes),
+				view(x,first_ind_x:last_ind_x-1),axis=axis)
+
+			val .+= trapzRegular1D(view(y,leading_axes,last_ind-1:last_ind,trailing_axes),
+				x[last_ind_x]-x[last_ind_x-1],axis=axis)
 		end
 		if even ∈ ["avg","last"]
-			result .+= simpsIrregular1D(view(y,first_ind+1:last_ind,remaining_axes),
-				view(x,first_ind_x+1:last_ind_x))
-			val .+= trapzRegular1D(view(y,first_ind:first_ind+1,remaining_axes),
-				x[first_ind_x+1]-x[first_ind_x])
+			result .+= simpsIrregular1D(view(y,leading_axes,first_ind+1:last_ind,trailing_axes),
+				view(x,first_ind_x+1:last_ind_x),axis=axis)
+
+			val .+= trapzRegular1D(view(y,leading_axes,first_ind:first_ind+1,trailing_axes),
+				x[first_ind_x+1]-x[first_ind_x],axis=axis)
 		end
 		if even == "avg"
 			val ./= 2.
@@ -147,7 +160,7 @@ function simps(y::AbstractArray,x::AbstractVector{<:Real};even="avg")
 		end
 		result .+= val
 	else
-		result = simpsIrregular1D(y,x)
+		result = simpsIrregular1D(y,x,axis=axis)
 	end
 	return result
 end
@@ -195,7 +208,7 @@ end
 
 # 1D array with uniform grid spacing for an odd number of points
 function simpsRegular1D(y::AbstractVector,dx::Real=1)
-	
+	@assert(isodd(length(y)),"Number of elements must be odd to apply Simpson's rule")
 	T = promote_type(eltype(y),Float64)
 	int_y = zero(T)
 
@@ -211,8 +224,7 @@ end
 
 # UnitRanges can be integrated exactly
 function simpsRegular1D(y::AbstractUnitRange{R},dx::Real=1) where R<:Real
-	T = promote_type(R,Float64)
-	(convert(T,last(y))^2 - convert(T,first(y))^2)/2 * dx
+	(last(y)^2 - first(y)^2)/2 * dx
 end
 
 # N dimensional array, integrate along any axis
@@ -255,14 +267,15 @@ function simpsIrregular1D(y::AbstractVector,x::AbstractVector)
 	return int_y
 end
 
-# N dimensional array, integrate along first axis
-function simpsIrregular1D(y::AbstractArray,x::AbstractVector)
+# N dimensional array, integrate along any axis
+function simpsIrregular1D(y::AbstractArray,x::AbstractVector;axis=1)
 
-	remaining_axes = CartesianIndices(axes(y)[2:end])
+	leading_axes = CartesianIndices(axes(y)[1:axis-1])
+	trailing_axes = CartesianIndices(axes(y)[axis+1:end])
 	T = promote_type(eltype(y),Float64)
-	int_y = zeros(T,remaining_axes.indices)
-	for ind in remaining_axes
-		int_y[ind] = simpsIrregular1D(view(y,:,ind),x) 
+	int_y = zeros(T,leading_axes.indices...,trailing_axes.indices...)
+	for ind_t in trailing_axes,ind_l in leading_axes
+		int_y[ind_l,ind_t] = simpsIrregular1D(view(y,ind_l,:,ind_t),x) 
 	end
 	return int_y
 end
@@ -324,7 +337,7 @@ function simpsSpherical3D(y::AbstractArray,
 		z = simps(r.^2 .* y,x=r,even=even)
 	else
 		dr = r
-		z = dr^2*simps((1:size(y,1)).^2 .* y,dx=dr,even=even)
+		z = dr^2*simps(@. ((1:size(y,1))^2 * y),dx=dr,even=even)
 	end
 
 	simpsSpherical2D(z,θ,ϕ,θint=θint,
