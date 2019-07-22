@@ -1,0 +1,7 @@
+name = "NumericallyIntegrateArrays"
+uuid = "030973e2-ac42-11e9-1c78-e905c061731d"
+authors = ["Jishnu Bhattacharya <jishnuonline@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
