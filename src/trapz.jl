@@ -10,7 +10,7 @@ trapz(y::AbstractArray,dx::Real=1;kwargs...)  = trapzRegular1D(
 												kwargs...)
 
 # Irregular grid for 1D array
-trapz(y::AbstractArray,x::AbstractVector;kwargs...) = trapzIrregular1D(
+trapz(y::AbstractArray,x::AbstractVector{<:Real};kwargs...) = trapzIrregular1D(
 												OffsetArrays.no_offset_view(y),
 												OffsetArrays.no_offset_view(x);kwargs...)
 
@@ -60,7 +60,7 @@ function trapzRegular1D(y::AbstractUnitRange,dx::Real=1)
 end
 
 # N dimensional array, integrate along any axis
-function trapzRegular1D(y::AbstractArray,dx::Real=1;axis=1)
+function trapzRegular1D(y::AbstractArray,dx::Real=1;axis::Integer=1)
 
 	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
 
@@ -74,7 +74,7 @@ function trapzRegular1D(y::AbstractArray,dx::Real=1;axis=1)
 end
 
 function trapzRegular1D!(y::AbstractArray,
-	int_y::AbstractArray{T},dx::Real=1;axis=1) where {T<:Number}
+	int_y::AbstractArray{<:Number},dx::Real=1;axis::Integer=1)
 
 	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
 
@@ -86,7 +86,7 @@ function trapzRegular1D!(y::AbstractArray,
 end
 
 function trapzRegular1DAdd!(y::AbstractArray,
-	int_y::AbstractArray{T},dx::Real=1;axis=1) where {T<:Number}
+	int_y::AbstractArray{<:Number},dx::Real=1;axis::Integer=1)
 
 	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
 
@@ -100,7 +100,7 @@ end
 ####################################################################################
 
 # Irregular grid for 1D array
-function trapzIrregular1D(y::AbstractVector,x::AbstractVector)
+function trapzIrregular1D(y::AbstractVector,x::AbstractVector{<:Real})
 	first_ind = first(axes(y,1))
 	last_ind = last(axes(y,1))
 
@@ -118,7 +118,7 @@ function trapzIrregular1D(y::AbstractVector,x::AbstractVector)
 end
 
 function trapzIrregular1D!(y::AbstractVector,
-	int_y::AbstractArray{T},x::AbstractVector) where {T<:Number}
+	int_y::AbstractArray{T},x::AbstractVector{<:Real}) where {T<:Number}
 
 	first_ind = first(axes(y,1))
 	last_ind = last(axes(y,1))
@@ -136,7 +136,7 @@ function trapzIrregular1D!(y::AbstractVector,
 end
 
 # N dimensional array, integrate along any axis
-function trapzIrregular1D(y::AbstractArray,x::AbstractVector;axis=1)
+function trapzIrregular1D(y::AbstractArray,x::AbstractVector{<:Real};axis::Integer=1)
 	
 	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
 
@@ -150,7 +150,7 @@ function trapzIrregular1D(y::AbstractArray,x::AbstractVector;axis=1)
 end
 
 function trapzIrregular1D!(y::AbstractArray,
-	int_y::AbstractArray{T},x::AbstractVector;axis=1) where {T<:Number}
+	int_y::AbstractArray{<:Number},x::AbstractVector{<:Real};axis::Integer=1)
 	
 	leading_axes,trailing_axes = leading_trailing_axes(y,axis)
 
@@ -161,7 +161,7 @@ function trapzIrregular1D!(y::AbstractArray,
 end
 
 function trapzIrregular1DAdd!(y::AbstractArray,
-	int_y::AbstractArray{T},x::AbstractVector;axis=1) where {T<:Number}
+	int_y::AbstractArray{<:Number},x::AbstractVector{<:Real};axis::Integer=1)
 	
 	leading_axes,trailing_axes = leading_trailing_axes(y,axis)
 

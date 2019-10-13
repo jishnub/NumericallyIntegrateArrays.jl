@@ -35,7 +35,7 @@ function simps(y::AbstractVector{<:Number},dx::Real=1;even="avg")
 end
 
 # Regular grid for nD array
-function simps(y::AbstractArray{<:Number},dx::Real=1;even="avg",axis=1)
+function simps(y::AbstractArray{<:Number},dx::Real=1;even="avg",axis::Integer=1)
 	
 	T = promote_type(eltype(y), Float64)
 	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
@@ -75,7 +75,7 @@ function simps(y::AbstractArray{<:Number},dx::Real=1;even="avg",axis=1)
 end
 
 # Irregular grid for 1D array
-function simps(y::AbstractVector{<:Number},x::AbstractVector{<:Real};even="avg")
+function simps(y::AbstractVector{<:Number},x::AbstractVector{<:Real}{<:Real};even="avg")
 
 	if iseven(size(y,1))
 		if !(even ∈ ("avg","first","last"))
@@ -115,7 +115,7 @@ function simps(y::AbstractVector{<:Number},x::AbstractVector{<:Real};even="avg")
 end
 
 # Irregular grid for nD array
-function simps(y::AbstractArray{<:Number},x::AbstractVector{<:Real};even="avg",axis=1)
+function simps(y::AbstractArray{<:Number},x::AbstractVector{<:Real}{<:Real};even="avg",axis::Integer=1)
 
 	T = promote_type(eltype(y), Float64)
 	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
@@ -257,7 +257,7 @@ function simpsRegular1D(y::AbstractArray{<:Number},dx::Real=1;axis::Integer=1)
 end
 
 function simpsRegular1D!(y::AbstractArray{<:Number},
-	int_y::AbstractArray{T},dx::Real=1;axis::Integer=1) where {T<:Number}
+	int_y::AbstractArray{<:Number},dx::Real=1;axis::Integer=1)
 
 	leading_axes,trailing_axes = leading_trailing_axes(y,axis)
 
@@ -269,7 +269,7 @@ function simpsRegular1D!(y::AbstractArray{<:Number},
 end
 
 function simpsRegular1DAdd!(y::AbstractArray{<:Number},
-	int_y::AbstractArray{T},dx::Real=1;axis::Integer=1) where {T<:Number}
+	int_y::AbstractArray{<:Number},dx::Real=1;axis::Integer=1)
 
 	leading_axes,trailing_axes = leading_trailing_axes(y,axis)
 
@@ -285,7 +285,7 @@ end
 #############################################################################
 
 # 1D array with non-uniform grid spacing, integral along one axis
-function simpsIrregular1D(y::AbstractVector{<:Number},x::AbstractVector)
+function simpsIrregular1D(y::AbstractVector{<:Number},x::AbstractVector{<:Real})
 
 	@assert(isodd(length(y)),"The array should have an odd number of elements")
 	@assert(length(x)==length(y),"y and x need to have the same number of elements")
@@ -309,7 +309,7 @@ function simpsIrregular1D(y::AbstractVector{<:Number},x::AbstractVector)
 end
 
 function simpsIrregular1D!(y::AbstractVector{<:Number},
-	int_y::AbstractArray{T},x::AbstractVector) where {T<:Number}
+	int_y::AbstractArray{T},x::AbstractVector{<:Real}) where {T<:Number}
 
 	@assert(isodd(length(y)),"The array should have an odd number of elements")
 	@assert(length(x)==length(y),"y and x need to have the same number of elements")
@@ -332,7 +332,7 @@ function simpsIrregular1D!(y::AbstractVector{<:Number},
 end
 
 # N dimensional array, integrate along any axis
-function simpsIrregular1D(y::AbstractArray{<:Number},x::AbstractVector;axis=1)
+function simpsIrregular1D(y::AbstractArray{<:Number},x::AbstractVector{<:Real};axis::Integer=1)
 
 	T = promote_type(eltype(y),Float64)
 	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
@@ -346,7 +346,7 @@ function simpsIrregular1D(y::AbstractArray{<:Number},x::AbstractVector;axis=1)
 end
 
 function simpsIrregular1D!(y::AbstractArray{<:Number},
-	int_y::AbstractArray{T},x::AbstractVector;axis=1) where {T<:Number}
+	int_y::AbstractArray{<:Number},x::AbstractVector{<:Real};axis::Integer=1)
 
 	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
 
@@ -358,7 +358,7 @@ function simpsIrregular1D!(y::AbstractArray{<:Number},
 end
 
 function simpsIrregular1DAdd!(y::AbstractArray{<:Number},
-	int_y::AbstractArray{T},x::AbstractVector;axis=1) where {T<:Number}
+	int_y::AbstractArray{<:Number},x::AbstractVector{<:Real};axis::Integer=1)
 
 	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
 
