@@ -75,7 +75,7 @@ function simps(y::AbstractArray{<:Number},dx::Real=1;even="avg",axis::Integer=1)
 end
 
 # Irregular grid for 1D array
-function simps(y::AbstractVector{<:Number},x::AbstractVector{<:Real}{<:Real};even="avg")
+function simps(y::AbstractVector{<:Number},x::AbstractVector{<:Real};even="avg")
 
 	if iseven(size(y,1))
 		if !(even ∈ ("avg","first","last"))
@@ -115,7 +115,7 @@ function simps(y::AbstractVector{<:Number},x::AbstractVector{<:Real}{<:Real};eve
 end
 
 # Irregular grid for nD array
-function simps(y::AbstractArray{<:Number},x::AbstractVector{<:Real}{<:Real};even="avg",axis::Integer=1)
+function simps(y::AbstractArray{<:Number},x::AbstractVector{<:Real};even="avg",axis::Integer=1)
 
 	T = promote_type(eltype(y), Float64)
 	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
