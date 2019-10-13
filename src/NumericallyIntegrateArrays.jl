@@ -22,8 +22,8 @@ scalar_to_0dim_array(T::Type{<:Number},z::Number)::Array{<:Number,0} = setindex!
 
 ##############################################################################################
 
-include("./trapz.jl")
-include("./simps.jl")
+include("trapz.jl")
+include("simps.jl")
 
 #####################################################################################
 

@@ -50,7 +50,9 @@ function trapzRegular1D(y::AbstractArray,dx::Real=1;axis=1)
 	leading_axes = CartesianIndices(axes(y)[1:axis-1])
 	trailing_axes = CartesianIndices(axes(y)[axis+1:end])
 	T = promote_type(eltype(y),Float64)
-	int_y = zeros(T,leading_axes.indices...,trailing_axes.indices...)
+	inds_type = NTuple{ndims(y)-1,<:AbstractUnitRange}
+	inds = (leading_axes.indices...,trailing_axes.indices...) :: inds_type
+	int_y = zeros(T,inds)
 	for ind_t in trailing_axes,ind_l in leading_axes
 		int_y[ind_l,ind_t] = trapzRegular1D(view(y,ind_l,:,ind_t),dx)
 	end
@@ -84,7 +86,9 @@ function trapzIrregular1D(y::AbstractArray,x::AbstractVector;axis=1)
 	leading_axes = CartesianIndices(axes(y)[1:axis-1])
 	trailing_axes = CartesianIndices(axes(y)[axis+1:end])
 	T = promote_type(eltype(y),Float64)
-	int_y = zeros(T,leading_axes.indices...,trailing_axes.indices...)
+	inds_type = NTuple{ndims(y)-1,<:AbstractUnitRange}
+	inds = (leading_axes.indices...,trailing_axes.indices...) :: inds_type
+	int_y = zeros(T,inds)
 	for ind_t in trailing_axes,ind_l in leading_axes
 		int_y[ind_l,ind_t] = trapzIrregular1D(view(y,ind_l,:,ind_t),x) 
 	end
