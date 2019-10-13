@@ -38,30 +38,36 @@ end
 function simps(y::AbstractArray{<:Number},dx::Real=1;even="avg",axis::Integer=1)
 	
 	T = promote_type(eltype(y), Float64)
-	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
+
+	perm = [axis]
+	append!(perm,[i for i in 1:axis-1])
+	append!(perm,[i for i in axis+1:ndims(y)])
+	y = permutedims(y,perm)
+
+	trailing_axes,inds = trailing_indices(y)
 	result = zeros(T,inds)
 
-	if iseven(size(y,axis))
+	if iseven(size(y,1))
 		if !(even ∈ ("avg","first","last"))
 			error("even has to be one of avg, first or last."*
 				"Specified even is $(even)")
 		end
 
 		val = zeros(T,inds)
-		first_ind = first(axes(y,axis))
-		last_ind = last(axes(y,axis))
+		first_ind = first(axes(y,1))
+		last_ind = last(axes(y,1))
 
 		if even ∈ ["avg","first"]
-			simpsRegular1DAdd!(view(y,leading_axes,first_ind:last_ind-1,trailing_axes),
-						result,dx,axis=axis)
-			trapzRegular1DAdd!(view(y,leading_axes,last_ind-1:last_ind,trailing_axes),
-						val,dx,axis=axis)
+			simpsRegular1DAdd!(view(y,first_ind:last_ind-1,trailing_axes),
+						result,dx,axis=1)
+			trapzRegular1DAdd!(view(y,last_ind-1:last_ind,trailing_axes),
+						val,dx,axis=1)
 		end
 		if even ∈ ["avg","last"]
-			simpsRegular1DAdd!(view(y,leading_axes,first_ind+1:last_ind,trailing_axes),
-						result,dx,axis=axis)
-			trapzRegular1DAdd!(view(y,leading_axes,first_ind:first_ind+1,trailing_axes),
-						val,dx,axis=axis)
+			simpsRegular1DAdd!(view(y,first_ind+1:last_ind,trailing_axes),
+						result,dx,axis=1)
+			trapzRegular1DAdd!(view(y,first_ind:first_ind+1,trailing_axes),
+						val,dx,axis=1)
 		end
 		if even == "avg"
 			val ./= 2
@@ -69,7 +75,7 @@ function simps(y::AbstractArray{<:Number},dx::Real=1;even="avg",axis::Integer=1)
 		end
 		result .+= val
 	else
-		simpsRegular1D!(y,result,dx,axis=axis)
+		simpsRegular1D!(y,result,dx,axis=1)
 	end
 	return result 
 end
@@ -118,7 +124,7 @@ end
 function simps(y::AbstractArray{<:Number},x::AbstractVector{<:Real};even="avg",axis::Integer=1)
 
 	T = promote_type(eltype(y), Float64)
-	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
+	leading_axes,trailing_axes,inds = leading_trailing_indices(y,axis)
 	result = zeros(T,inds)
 
 	if iseven(size(y,axis))
@@ -247,7 +253,7 @@ end
 function simpsRegular1D(y::AbstractArray{<:Number},dx::Real=1;axis::Integer=1)
 
 	T = promote_type(eltype(y),Float64)
-	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
+	leading_axes,trailing_axes,inds = leading_trailing_indices(y,axis)
 	int_y = zeros(T,inds)
 
 	for ind_t in trailing_axes,ind_l in leading_axes
@@ -259,7 +265,7 @@ end
 function simpsRegular1D!(y::AbstractArray{<:Number},
 	int_y::AbstractArray{<:Number},dx::Real=1;axis::Integer=1)
 
-	leading_axes,trailing_axes = leading_trailing_axes(y,axis)
+	leading_axes,trailing_axes = leading_trailing_indices(y,axis)
 
 	for ind_t in trailing_axes,ind_l in leading_axes
 		int_y[ind_l,ind_t] = simpsRegular1D(view(y,ind_l,:,ind_t),dx)
@@ -271,7 +277,7 @@ end
 function simpsRegular1DAdd!(y::AbstractArray{<:Number},
 	int_y::AbstractArray{<:Number},dx::Real=1;axis::Integer=1)
 
-	leading_axes,trailing_axes = leading_trailing_axes(y,axis)
+	leading_axes,trailing_axes = leading_trailing_indices(y,axis)
 
 	for ind_t in trailing_axes,ind_l in leading_axes
 		int_y[ind_l,ind_t] += simpsRegular1D(view(y,ind_l,:,ind_t),dx)
@@ -335,7 +341,7 @@ end
 function simpsIrregular1D(y::AbstractArray{<:Number},x::AbstractVector{<:Real};axis::Integer=1)
 
 	T = promote_type(eltype(y),Float64)
-	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
+	leading_axes,trailing_axes,inds = leading_trailing_indices(y,axis)
 	int_y = zeros(T,inds)
 
 	for ind_t in trailing_axes,ind_l in leading_axes
@@ -348,7 +354,7 @@ end
 function simpsIrregular1D!(y::AbstractArray{<:Number},
 	int_y::AbstractArray{<:Number},x::AbstractVector{<:Real};axis::Integer=1)
 
-	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
+	leading_axes,trailing_axes,inds = leading_trailing_indices(y,axis)
 
 	for ind_t in trailing_axes,ind_l in leading_axes
 		int_y[ind_l,ind_t] = simpsIrregular1D!(view(y,ind_l,:,ind_t),x) 
@@ -360,7 +366,7 @@ end
 function simpsIrregular1DAdd!(y::AbstractArray{<:Number},
 	int_y::AbstractArray{<:Number},x::AbstractVector{<:Real};axis::Integer=1)
 
-	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
+	leading_axes,trailing_axes,inds = leading_trailing_indices(y,axis)
 
 	for ind_t in trailing_axes,ind_l in leading_axes
 		int_y[ind_l,ind_t] += simpsIrregular1D(view(y,ind_l,:,ind_t),x) 
