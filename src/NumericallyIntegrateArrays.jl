@@ -1,5 +1,5 @@
 module NumericallyIntegrateArrays
-using OffsetArrays
+using OffsetArrays, LinearAlgebra
 
 # package code goes here
 export simps,trapz

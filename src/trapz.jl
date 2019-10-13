@@ -5,14 +5,41 @@
 ####################################################################################
 
 # Regular grid for 1D array
-trapz(y::AbstractArray,dx::Real=1;kwargs...)  = trapzRegular1D(
-												OffsetArrays.no_offset_view(y),dx;
-												kwargs...)
+trapz(y::AbstractVector,dx::Real=1)  = trapzRegular1D(
+									OffsetArrays.no_offset_view(y),dx)
+
+# Regular grid for nD array
+function trapz(y::AbstractArray,dx::Real=1;axis=1)
+	T = promote_type(eltype(y), Float64)
+
+	if axis != 1
+		perm = [axis]
+		append!(perm,[i for i in 1:axis-1])
+		append!(perm,[i for i in axis+1:ndims(y)])
+		y = permutedims(y,perm)
+	end
+
+	trapzRegular1D(OffsetArrays.no_offset_view(y),dx)
+end
 
 # Irregular grid for 1D array
-trapz(y::AbstractArray,x::AbstractVector{<:Real};kwargs...) = trapzIrregular1D(
+trapz(y::AbstractVector,x::AbstractVector{<:Real}) = trapzIrregular1D(
 												OffsetArrays.no_offset_view(y),
-												OffsetArrays.no_offset_view(x);kwargs...)
+												OffsetArrays.no_offset_view(x))
+
+# Irregular grid for nD array
+function trapz(y::AbstractArray,x::AbstractVector{<:Real};axis=1)
+	T = promote_type(eltype(y), Float64)
+
+	if axis != 1
+		perm = [axis]
+		append!(perm,[i for i in 1:axis-1])
+		append!(perm,[i for i in axis+1:ndims(y)])
+		y = permutedims(y,perm)
+	end
+
+	trapzIrregular1D(OffsetArrays.no_offset_view(y),OffsetArrays.no_offset_view(x))
+end
 
 
 ####################################################################################

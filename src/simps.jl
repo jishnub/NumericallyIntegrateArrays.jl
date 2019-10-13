@@ -188,30 +188,18 @@ function simpsweight(Nelems,index)
 	return 2
 end
 
-function quadratic_fit_integrate!(T,coeff,y,x)
+function quadratic_fit_integrate!(coeffs,y,x)
 	# Find the lagrange polynomial fit to y(x) (quadratic)
 	# integrate this between first(x) and last(x)
-	@assert(length(y)==length(x)==3)
-	first_ind_x = first(axes(x,1))
+	@assert(length(y)==length(x)==length(coeffs)==3)
 
-	coeff[1] = -(x[first_ind_x]-x[first_ind_x+2])*
-			(2x[first_ind_x]-3x[first_ind_x+1]+x[first_ind_x+2])/
-			(6*(x[first_ind_x]-x[first_ind_x+1]))
+	coeffs[1] = -(x[1]-x[3])*(2x[1]-3x[2]+x[3])/(6*(x[1]-x[2]))
 
-	coeff[2] = -(x[first_ind_x]-x[first_ind_x+2])^3/
-				(6*(x[first_ind_x]-x[first_ind_x+1])*
-					(x[first_ind_x+1]-x[first_ind_x+2]))
+	coeffs[2] = -(x[1]-x[3])^3/(6*(x[1]-x[2])*(x[2]-x[3]))
 
-	coeff[3] = (x[first_ind_x]-x[first_ind_x+2])*
-				(x[first_ind_x]-3x[first_ind_x+1]+2x[first_ind_x+2])/
-					(6*(x[first_ind_x+1]-x[first_ind_x+2]))
+	coeffs[3] = (x[1]-x[3])*(x[1]-3x[2]+2x[3])/(6*(x[2]-x[3]))
 
-	s = zero(T)
-	for ind in eachindex(coeff)
-		s += coeff[ind] * y[ind]
-	end
-
-	return s
+	dot(coeffs,y)
 end
 
 #############################################################################
@@ -259,7 +247,7 @@ function simpsRegular1D(y::AbstractUnitRange{<:Real},dx::Real=1)
 	(last(y)^2 - first(y)^2) * dx/2
 end
 
-# N dimensional array, integrate along any axis
+# N dimensional array, integrate along the first axis
 function simpsRegular1D(y::AbstractArray{<:Number},dx::Real=1)
 
 	T = promote_type(eltype(y),Float64)
@@ -267,7 +255,7 @@ function simpsRegular1D(y::AbstractArray{<:Number},dx::Real=1)
 	int_y = zeros(T,inds)
 
 	for ind_t in trailing_axes
-		int_y[ind_t] = simpsRegular1D(view(y,:,ind_t),dx) 
+		int_y[ind_t] = simpsRegular1D(view(y,:,ind_t),dx)
 	end
 	return int_y
 end
@@ -317,7 +305,7 @@ function simpsIrregular1D(y::AbstractVector{<:Number},x::AbstractVector{<:Real})
 
 	for ind in 1:2:length(x)-2
 
-		int_y += quadratic_fit_integrate!(T,coeffs,view(y_no_offset,ind:ind+2),
+		int_y += quadratic_fit_integrate!(coeffs,view(y_no_offset,ind:ind+2),
 						view(x_no_offset,ind:ind+2))
 	end
 
@@ -340,7 +328,7 @@ function simpsIrregular1D!(y::AbstractVector{<:Number},
 
 	for ind in 1:2:length(x)-2
 
-		int_y .+= quadratic_fit_integrate!(T,coeffs,view(y_no_offset,ind:ind+2),
+		int_y .+= quadratic_fit_integrate!(coeffs,view(y_no_offset,ind:ind+2),
 						view(x_no_offset,ind:ind+2))
 	end
 
@@ -355,31 +343,31 @@ function simpsIrregular1D(y::AbstractArray{<:Number},x::AbstractVector{<:Real})
 	int_y = zeros(T,inds)
 
 	for ind_t in trailing_axes
-		int_y[ind_t] = simpsIrregular1D(view(y,:,ind_t),x) 
+		int_y[ind_t] = simpsIrregular1D(view(y,:,ind_t),x)
 	end
 
 	return int_y
 end
 
 function simpsIrregular1D!(y::AbstractArray{<:Number},
-	int_y::AbstractArray{<:Number},x::AbstractVector{<:Real})
+	int_y::AbstractArray{T},x::AbstractVector{<:Real}) where {T<:Number}
 
 	trailing_axes,_ = trailing_indices(y)
 
 	for ind_t in trailing_axes
-		int_y[ind_t] = simpsIrregular1D(view(y,:,ind_t),x) 
+		int_y[ind_t] = simpsIrregular1D(view(y,:,ind_t),x)
 	end
 
 	return int_y
 end
 
 function simpsIrregular1DAdd!(y::AbstractArray{<:Number},
-	int_y::AbstractArray{<:Number},x::AbstractVector{<:Real})
+	int_y::AbstractArray{T},x::AbstractVector{<:Real}) where {T<:Number}
 
 	trailing_axes,_ = trailing_indices(y)
 
 	for ind_t in trailing_axes
-		int_y[ind_t] += simpsIrregular1D(view(y,:,ind_t),x) 
+		int_y[ind_t] += simpsIrregular1D(view(y,:,ind_t),x)
 	end
 
 	return int_y
