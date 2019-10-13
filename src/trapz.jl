@@ -59,39 +59,39 @@ function trapzRegular1D(y::AbstractUnitRange,dx::Real=1)
 	(last(y)^2 - first(y)^2) * dx/2
 end
 
-# N dimensional array, integrate along any axis
-function trapzRegular1D(y::AbstractArray,dx::Real=1;axis::Integer=1)
+# N dimensional array, integrate along the first axis
+function trapzRegular1D(y::AbstractArray,dx::Real=1)
 
-	leading_axes,trailing_axes,inds = leading_trailing_indices(y,axis)
+	trailing_axes,inds = trailing_indices(y)
 
 	T = promote_type(eltype(y),Float64)
 	int_y = zeros(T,inds)
 
-	for ind_t in trailing_axes,ind_l in leading_axes
-		int_y[ind_l,ind_t] = trapzRegular1D(y[ind_l,:,ind_t],dx)
+	for ind_t in trailing_axes
+		int_y[ind_t] = trapzRegular1D(view(y,:,ind_t),dx)
 	end
 	return int_y
 end
 
 function trapzRegular1D!(y::AbstractArray,
-	int_y::AbstractArray{<:Number},dx::Real=1;axis::Integer=1)
+	int_y::AbstractArray{<:Number},dx::Real=1)
 
-	leading_axes,trailing_axes,inds = leading_trailing_indices(y,axis)
+	trailing_axes,_ = trailing_indices(y)
 
-	for ind_t in trailing_axes,ind_l in leading_axes
-		int_y[ind_l,ind_t] = trapzRegular1D(view(y,ind_l,:,ind_t),result,dx)
+	for ind_t in trailing_axes
+		int_y[ind_t] = trapzRegular1D(view(y,:,ind_t),dx)
 	end
 
 	return int_y
 end
 
 function trapzRegular1DAdd!(y::AbstractArray,
-	int_y::AbstractArray{<:Number},dx::Real=1;axis::Integer=1)
+	int_y::AbstractArray{<:Number},dx::Real=1)
 
-	leading_axes,trailing_axes,inds = leading_trailing_indices(y,axis)
+	trailing_axes,_ = trailing_indices(y)
 
-	for ind_t in trailing_axes,ind_l in leading_axes
-		int_y[ind_l,ind_t] += trapzRegular1D(view(y,ind_l,:,ind_t),dx)
+	for ind_t in trailing_axes
+		int_y[ind_t] += trapzRegular1D(view(y,:,ind_t),dx)
 	end
 	
 	return int_y
@@ -135,38 +135,38 @@ function trapzIrregular1D!(y::AbstractVector,
 	return first(int_y)
 end
 
-# N dimensional array, integrate along any axis
-function trapzIrregular1D(y::AbstractArray,x::AbstractVector{<:Real};axis::Integer=1)
+# N dimensional array, integrate along the first axis
+function trapzIrregular1D(y::AbstractArray,x::AbstractVector{<:Real})
 	
-	leading_axes,trailing_axes,inds = leading_trailing_indices(y,axis)
+	trailing_axes,inds = trailing_indices(y)
 
 	T = promote_type(eltype(y),Float64)
 	int_y = zeros(T,inds)
 
-	for ind_t in trailing_axes,ind_l in leading_axes
-		int_y[ind_l,ind_t] = trapzIrregular1D(y[ind_l,:,ind_t],x) 
+	for ind_t in trailing_axes
+		int_y[ind_t] = trapzIrregular1D(view(y,:,ind_t),x) 
 	end
 	return int_y
 end
 
 function trapzIrregular1D!(y::AbstractArray,
-	int_y::AbstractArray{<:Number},x::AbstractVector{<:Real};axis::Integer=1)
+	int_y::AbstractArray{<:Number},x::AbstractVector{<:Real})
 	
-	leading_axes,trailing_axes = leading_trailing_indices(y,axis)
+	trailing_axes,_ = trailing_indices(y,axis)
 
-	for ind_t in trailing_axes,ind_l in leading_axes
-		int_y[ind_l,ind_t] = trapzIrregular1D(view(y,ind_l,:,ind_t),x)
+	for ind_t in trailing_axes
+		int_y[ind_t] = trapzIrregular1D(view(y,:,ind_t),x)
 	end
 	return int_y
 end
 
 function trapzIrregular1DAdd!(y::AbstractArray,
-	int_y::AbstractArray{<:Number},x::AbstractVector{<:Real};axis::Integer=1)
+	int_y::AbstractArray{<:Number},x::AbstractVector{<:Real})
 	
-	leading_axes,trailing_axes = leading_trailing_indices(y,axis)
+	trailing_axes,_ = trailing_indices(y,axis)
 
-	for ind_t in trailing_axes,ind_l in leading_axes
-		int_y[ind_l,ind_t] = trapzIrregular1D(view(y,ind_l,:,ind_t),x)
+	for ind_t in trailing_axes
+		int_y[ind_t] = trapzIrregular1D(view(y,:,ind_t),x)
 	end
 
 	return int_y
