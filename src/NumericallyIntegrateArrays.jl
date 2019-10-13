@@ -22,6 +22,15 @@ scalar_to_0dim_array(T::Type{<:Number},z::Number)::Array{<:Number,0} = setindex!
 
 ##############################################################################################
 
+function leading_trailing_axes(y::AbstractArray{<:Number},dim::Integer)
+	ax = axes(y)
+	leading_axes = CartesianIndices(ax[1:dim-1])
+	trailing_axes = CartesianIndices(ax[dim+1:end])
+	inds_type = NTuple{ndims(y)-1,<:AbstractUnitRange}
+	inds = (leading_axes.indices...,trailing_axes.indices...) :: inds_type
+	return leading_axes,trailing_axes,inds
+end
+
 include("trapz.jl")
 include("simps.jl")
 

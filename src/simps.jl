@@ -1,7 +1,7 @@
 ###########################################################################################
 
 # Regular grid for 1D array
-function simps(y::AbstractVector,dx::Real=1;even="avg")
+function simps(y::AbstractVector{<:Number},dx::Real=1;even="avg")
 
 	if iseven(size(y,1))
 		if !(even ∈ ("avg","first","last"))
@@ -35,7 +35,11 @@ function simps(y::AbstractVector,dx::Real=1;even="avg")
 end
 
 # Regular grid for nD array
-function simps(y::AbstractArray,dx::Real=1;even="avg",axis=1)
+function simps(y::AbstractArray{<:Number},dx::Real=1;even="avg",axis=1)
+	
+	T = promote_type(eltype(y), Float64)
+	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
+	result = zeros(T,inds)
 
 	if iseven(size(y,axis))
 		if !(even ∈ ("avg","first","last"))
@@ -43,28 +47,21 @@ function simps(y::AbstractArray,dx::Real=1;even="avg",axis=1)
 				"Specified even is $(even)")
 		end
 
-		T = promote_type(eltype(y), Float64)
-
-		leading_axes = CartesianIndices(axes(y)[1:axis-1])
-		trailing_axes = CartesianIndices(axes(y)[axis+1:end])
-
-		result = zeros(T,leading_axes.indices...,trailing_axes.indices...)
-		val = zeros(T,leading_axes.indices...,trailing_axes.indices...)
-
+		val = zeros(T,inds)
 		first_ind = first(axes(y,axis))
 		last_ind = last(axes(y,axis))
 
 		if even ∈ ["avg","first"]
-			result .+= simpsRegular1D(view(y,leading_axes,first_ind:last_ind-1,trailing_axes),
-						dx,axis=axis)
-			val .+= trapzRegular1D(view(y,leading_axes,last_ind-1:last_ind,trailing_axes),
-						dx,axis=axis)
+			simpsRegular1DAdd!(view(y,leading_axes,first_ind:last_ind-1,trailing_axes),
+						result,dx,axis=axis)
+			trapzRegular1DAdd!(view(y,leading_axes,last_ind-1:last_ind,trailing_axes),
+						val,dx,axis=axis)
 		end
 		if even ∈ ["avg","last"]
-			result .+= simpsRegular1D(view(y,leading_axes,first_ind+1:last_ind,trailing_axes),
-						dx,axis=axis)
-			val .+= trapzRegular1D(view(y,leading_axes,first_ind:first_ind+1,trailing_axes),
-						dx,axis=axis)
+			simpsRegular1DAdd!(view(y,leading_axes,first_ind+1:last_ind,trailing_axes),
+						result,dx,axis=axis)
+			trapzRegular1DAdd!(view(y,leading_axes,first_ind:first_ind+1,trailing_axes),
+						val,dx,axis=axis)
 		end
 		if even == "avg"
 			val ./= 2
@@ -72,13 +69,13 @@ function simps(y::AbstractArray,dx::Real=1;even="avg",axis=1)
 		end
 		result .+= val
 	else
-		result = simpsRegular1D(y,dx,axis=axis)
+		simpsRegular1D!(y,result,dx,axis=axis)
 	end
 	return result 
 end
 
 # Irregular grid for 1D array
-function simps(y::AbstractVector,x::AbstractVector{<:Real};even="avg")
+function simps(y::AbstractVector{<:Number},x::AbstractVector{<:Real};even="avg")
 
 	if iseven(size(y,1))
 		if !(even ∈ ("avg","first","last"))
@@ -118,7 +115,11 @@ function simps(y::AbstractVector,x::AbstractVector{<:Real};even="avg")
 end
 
 # Irregular grid for nD array
-function simps(y::AbstractArray,x::AbstractVector{<:Real};even="avg",axis=1)
+function simps(y::AbstractArray{<:Number},x::AbstractVector{<:Real};even="avg",axis=1)
+
+	T = promote_type(eltype(y), Float64)
+	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
+	result = zeros(T,inds)
 
 	if iseven(size(y,axis))
 		if !(even ∈ ("avg","first","last"))
@@ -126,13 +127,7 @@ function simps(y::AbstractArray,x::AbstractVector{<:Real};even="avg",axis=1)
 				"Specified even is $(even)")
 		end
 
-		T = promote_type(eltype(y), Float64)
-		
-		leading_axes = CartesianIndices(axes(y)[1:axis-1])
-		trailing_axes = CartesianIndices(axes(y)[axis+1:end])
-
-		result = zeros(T,leading_axes.indices...,trailing_axes.indices...)
-		val = zeros(T,leading_axes.indices...,trailing_axes.indices...)
+		val = zeros(T,inds)
 
 		first_ind = first(axes(y,axis))
 		last_ind = last(axes(y,axis))
@@ -141,18 +136,18 @@ function simps(y::AbstractArray,x::AbstractVector{<:Real};even="avg",axis=1)
 		last_ind_x = last(axes(x,1))
 
 		if even ∈ ["avg","first"]
-			result .+= simpsIrregular1D(view(y,leading_axes,first_ind:last_ind-1,trailing_axes),
-				view(x,first_ind_x:last_ind_x-1),axis=axis)
+			simpsIrregular1DAdd!(view(y,leading_axes,first_ind:last_ind-1,trailing_axes),
+				result,view(x,first_ind_x:last_ind_x-1),axis=axis)
 
-			val .+= trapzRegular1D(view(y,leading_axes,last_ind-1:last_ind,trailing_axes),
-				x[last_ind_x]-x[last_ind_x-1],axis=axis)
+			trapzRegular1DAdd!(view(y,leading_axes,last_ind-1:last_ind,trailing_axes),
+				val,x[last_ind_x]-x[last_ind_x-1],axis=axis)
 		end
 		if even ∈ ["avg","last"]
-			result .+= simpsIrregular1D(view(y,leading_axes,first_ind+1:last_ind,trailing_axes),
-				view(x,first_ind_x+1:last_ind_x),axis=axis)
+			simpsIrregular1DAdd!(view(y,leading_axes,first_ind+1:last_ind,trailing_axes),
+				result,view(x,first_ind_x+1:last_ind_x),axis=axis)
 
-			val .+= trapzRegular1D(view(y,leading_axes,first_ind:first_ind+1,trailing_axes),
-				x[first_ind_x+1]-x[first_ind_x],axis=axis)
+			trapzRegular1DAdd!(view(y,leading_axes,first_ind:first_ind+1,trailing_axes),
+				val,x[first_ind_x+1]-x[first_ind_x],axis=axis)
 		end
 		if even == "avg"
 			val ./= 2.
@@ -160,7 +155,7 @@ function simps(y::AbstractArray,x::AbstractVector{<:Real};even="avg",axis=1)
 		end
 		result .+= val
 	else
-		result = simpsIrregular1D(y,x,axis=axis)
+		simpsIrregular1D!(y,result,x,axis=axis)
 	end
 	return result
 end
@@ -196,9 +191,10 @@ function quadratic_fit_integrate!(T,coeff,y,x)
 					(6*(x[first_ind_x+1]-x[first_ind_x+2]))
 
 	s = zero(T)
-	for (c_i,y_i) in zip(coeff,y)
-		s += c_i*y_i
+	for ind in eachindex(coeff)
+		s += coeff[ind] * y[ind]
 	end
+
 	return s
 end
 
@@ -207,7 +203,8 @@ end
 #############################################################################
 
 # 1D array with uniform grid spacing for an odd number of points
-function simpsRegular1D(y::AbstractVector,dx::Real=1)
+function simpsRegular1D(y::AbstractVector{<:Number},dx::Real=1)
+	
 	@assert(isodd(length(y)),"Number of elements must be odd to apply Simpson's rule")
 	T = promote_type(eltype(y),Float64)
 	int_y = zero(T)
@@ -216,29 +213,70 @@ function simpsRegular1D(y::AbstractVector,dx::Real=1)
 
 	for (ind,y_i) in enumerate(y)
 		w = simpsweight(N,ind)
-		int_y += w*y_i
+		int_y += w * y_i
 	end
 	
 	return int_y*dx/3
 end
 
+function simpsRegular1D!(y::AbstractVector{<:Number},
+	int_y::AbstractArray{T},dx::Real=1) where {T<:Number}
+	
+	@assert(isodd(length(y)),"Number of elements must be odd to apply Simpson's rule")
+	
+	N = size(y,1)
+
+	fill!(int_y,zero(T))
+
+	for (ind,y_i) in enumerate(y)
+		w = simpsweight(N,ind)
+		@. int_y += w * y_i
+	end
+
+	@. int_y *= dx/3
+
+	return first(int_y)
+end
+
 # UnitRanges can be integrated exactly
-function simpsRegular1D(y::AbstractUnitRange{R},dx::Real=1) where R<:Real
-	(last(y)^2 - first(y)^2)/2 * dx
+function simpsRegular1D(y::AbstractUnitRange{<:Real},dx::Real=1)
+	(last(y)^2 - first(y)^2) * dx/2
 end
 
 # N dimensional array, integrate along any axis
-function simpsRegular1D(y::AbstractArray,dx::Real=1;axis::Integer=1)
+function simpsRegular1D(y::AbstractArray{<:Number},dx::Real=1;axis::Integer=1)
 
-	leading_axes = CartesianIndices(axes(y)[1:axis-1])
-	trailing_axes = CartesianIndices(axes(y)[axis+1:end])
 	T = promote_type(eltype(y),Float64)
-	inds_type = NTuple{ndims(y)-1,<:AbstractUnitRange}
-	inds = (leading_axes.indices...,trailing_axes.indices...) :: inds_type
+	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
 	int_y = zeros(T,inds)
+
 	for ind_t in trailing_axes,ind_l in leading_axes
 		int_y[ind_l,ind_t] = simpsRegular1D(y[ind_l,:,ind_t],dx) 
 	end
+	return int_y
+end
+
+function simpsRegular1D!(y::AbstractArray{<:Number},
+	int_y::AbstractArray{T},dx::Real=1;axis::Integer=1) where {T<:Number}
+
+	leading_axes,trailing_axes = leading_trailing_axes(y,axis)
+
+	for ind_t in trailing_axes,ind_l in leading_axes
+		int_y[ind_l,ind_t] = simpsRegular1D(view(y,ind_l,:,ind_t),dx)
+	end
+
+	return int_y
+end
+
+function simpsRegular1DAdd!(y::AbstractArray{<:Number},
+	int_y::AbstractArray{T},dx::Real=1;axis::Integer=1) where {T<:Number}
+
+	leading_axes,trailing_axes = leading_trailing_axes(y,axis)
+
+	for ind_t in trailing_axes,ind_l in leading_axes
+		int_y[ind_l,ind_t] += simpsRegular1D(view(y,ind_l,:,ind_t),dx)
+	end
+
 	return int_y
 end
 
@@ -247,7 +285,7 @@ end
 #############################################################################
 
 # 1D array with non-uniform grid spacing, integral along one axis
-function simpsIrregular1D(y::AbstractVector,x::AbstractVector)
+function simpsIrregular1D(y::AbstractVector{<:Number},x::AbstractVector)
 
 	@assert(isodd(length(y)),"The array should have an odd number of elements")
 	@assert(length(x)==length(y),"y and x need to have the same number of elements")
@@ -260,6 +298,7 @@ function simpsIrregular1D(y::AbstractVector,x::AbstractVector)
 
 	# The strategy is to fit a quadratic to three points, and compute its integral
 	coeffs = zeros(T,3)
+
 	for ind in 1:2:length(x)-2
 
 		int_y += quadratic_fit_integrate!(T,coeffs,view(y_no_offset,ind:ind+2),
@@ -269,22 +308,68 @@ function simpsIrregular1D(y::AbstractVector,x::AbstractVector)
 	return int_y
 end
 
-# N dimensional array, integrate along any axis
-function simpsIrregular1D(y::AbstractArray,x::AbstractVector;axis=1)
+function simpsIrregular1D!(y::AbstractVector{<:Number},
+	int_y::AbstractArray{T},x::AbstractVector) where {T<:Number}
 
-	leading_axes = CartesianIndices(axes(y)[1:axis-1])
-	trailing_axes = CartesianIndices(axes(y)[axis+1:end])
-	T = promote_type(eltype(y),Float64)
-	inds_type = NTuple{ndims(y)-1,<:AbstractUnitRange}
-	inds = (leading_axes.indices...,trailing_axes.indices...) :: inds_type
-	int_y = zeros(T,inds)
-	for ind_t in trailing_axes,ind_l in leading_axes
-		int_y[ind_l,ind_t] = simpsIrregular1D(y[ind_l,:,ind_t],x) 
+	@assert(isodd(length(y)),"The array should have an odd number of elements")
+	@assert(length(x)==length(y),"y and x need to have the same number of elements")
+
+	fill!(int_y,zero(T))
+
+	y_no_offset = OffsetArrays.no_offset_view(y)
+	x_no_offset = OffsetArrays.no_offset_view(x)
+
+	# The strategy is to fit a quadratic to three points, and compute its integral
+	coeffs = zeros(T,3)
+
+	for ind in 1:2:length(x)-2
+
+		int_y .+= quadratic_fit_integrate!(T,coeffs,view(y_no_offset,ind:ind+2),
+						view(x_no_offset,ind:ind+2))
 	end
+
+	return first(int_y)
+end
+
+# N dimensional array, integrate along any axis
+function simpsIrregular1D(y::AbstractArray{<:Number},x::AbstractVector;axis=1)
+
+	T = promote_type(eltype(y),Float64)
+	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
+	int_y = zeros(T,inds)
+
+	for ind_t in trailing_axes,ind_l in leading_axes
+		int_y[ind_l,ind_t] = simpsIrregular1D(view(y,ind_l,:,ind_t),x) 
+	end
+
 	return int_y
 end
 
-function simpsCircle(y::AbstractVector,
+function simpsIrregular1D!(y::AbstractArray{<:Number},
+	int_y::AbstractArray{T},x::AbstractVector;axis=1) where {T<:Number}
+
+	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
+
+	for ind_t in trailing_axes,ind_l in leading_axes
+		int_y[ind_l,ind_t] = simpsIrregular1D!(view(y,ind_l,:,ind_t),x) 
+	end
+
+	return int_y
+end
+
+function simpsIrregular1DAdd!(y::AbstractArray{<:Number},
+	int_y::AbstractArray{T},x::AbstractVector;axis=1) where {T<:Number}
+
+	leading_axes,trailing_axes,inds = leading_trailing_axes(y,axis)
+
+	for ind_t in trailing_axes,ind_l in leading_axes
+		int_y[ind_l,ind_t] += simpsIrregular1D(view(y,ind_l,:,ind_t),x) 
+	end
+
+	return int_y
+end
+
+function simpsCircle(y::AbstractVector{<:Number},
 	ϕ::AbstractArray{<:Real,1}=LinRange(0,2π,size(y,1));
 	even::String="avg",ϕ2π::Bool=true)::Array{<:Number,0}
 
@@ -307,7 +392,7 @@ function simpsCircle(y::AbstractVector,
 	return z 
 end
 
-function simpsSpherical2D(y::AbstractArray,
+function simpsSpherical2D(y::AbstractArray{<:Number},
 	θ::AbstractArray{<:Real,1}=LinRange(0,π,size(y,1)),
 	ϕ::AbstractArray{<:Real,1}=LinRange(0,2π,size(y,2));
 	even="avg",θint="clenshaw_quadrature",GLweights=nothing,
@@ -330,7 +415,7 @@ function simpsSpherical2D(y::AbstractArray,
 	simpsCircle(z,ϕ,even=even,ϕ2π=ϕ2π) 
 end
 
-function simpsSpherical3D(y::AbstractArray,
+function simpsSpherical3D(y::AbstractArray{<:Number},
 	r::Union{Real,AbstractArray{<:Real,1}}=1,
 	θ::AbstractArray{<:Real,1}=LinRange(0,π,size(y,2)),
 	ϕ::AbstractArray{<:Real,1}=LinRange(0,π,size(y,3));
