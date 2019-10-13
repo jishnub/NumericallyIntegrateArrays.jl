@@ -193,7 +193,7 @@ function trapzIrregular1DAdd!(y::AbstractArray,
 	trailing_axes,_ = trailing_indices(y,axis)
 
 	for ind_t in trailing_axes
-		int_y[ind_t] = trapzIrregular1D(view(y,:,ind_t),x)
+		int_y[ind_t] += trapzIrregular1D(view(y,:,ind_t),x)
 	end
 
 	return int_y
