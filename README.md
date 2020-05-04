@@ -1,4 +1,6 @@
 # NumericallyIntegrateArrays.jl
+[![Build Status](https://travis-ci.com/jishnub/NumericallyIntegrateArrays.jl.svg?branch=master)](https://travis-ci.com/jishnub/NumericallyIntegrateArrays.jl)
+
 Julia functions for Simpson's rule and trapezoidal rule analogous to scipy.integrate
 
 # Installation
@@ -31,7 +33,7 @@ Multidimensional arrays work as well, where the integration is over the first ax
 ```julia
 julia> f2 = sin.(x) * cos.(x)';
 
-julia> hcat(simps(f2,x,axis=1),2cos.(x)) # the second column is the expected result
+julia> hcat( simps(f2,x), 2cos.(x) ) # the second column is the expected result
 10×2 Array{Float64,2}:
   1.99955    2.0
   1.87896    1.87939
