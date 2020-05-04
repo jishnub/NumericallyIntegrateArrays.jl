@@ -210,17 +210,9 @@ end
 function simpsRegular1D(y::AbstractVector{<:Number},dx::Real=1)
 	
 	@assert(isodd(length(y)),"Number of elements must be odd to apply Simpson's rule")
-	T = promote_type(eltype(y),Float64)
-	int_y = zero(T)
 
 	N = size(y,1)
-
-	for (ind,y_i) in enumerate(y)
-		w = simpsweight(N,ind)
-		int_y += w * y_i
-	end
-	
-	return int_y*dx/3
+	sum(simpsweight(N,ind)*yi for (ind,yi) in enumerate(y)) *dx/3
 end
 
 function simpsRegular1D!(y::AbstractVector{<:Number},
@@ -229,15 +221,7 @@ function simpsRegular1D!(y::AbstractVector{<:Number},
 	@assert(isodd(length(y)),"Number of elements must be odd to apply Simpson's rule")
 	
 	N = size(y,1)
-
-	fill!(int_y,zero(T))
-
-	for (ind,y_i) in enumerate(y)
-		w = simpsweight(N,ind)
-		@. int_y += w * y_i
-	end
-
-	@. int_y *= dx/3
+	int_y .= sum(simpsweight(N,ind)*yi for (ind,yi) in enumerate(y)) *dx/3
 
 	return first(int_y)
 end
@@ -289,12 +273,12 @@ end
 #############################################################################
 
 # 1D array with non-uniform grid spacing, integral along one axis
-function simpsIrregular1D(y::AbstractVector{<:Number},x::AbstractVector{<:Real})
+function simpsIrregular1D(y::AbstractVector{TY},x::AbstractVector{TX}) where {TY,TX}
 
 	@assert(isodd(length(y)),"The array should have an odd number of elements")
 	@assert(length(x)==length(y),"y and x need to have the same number of elements")
 
-	T = promote_type(eltype(y), Float64)
+	T = promote_type(TY, TX)
 	int_y = zero(T)
 
 	y_no_offset = OffsetArrays.no_offset_view(y)
@@ -312,33 +296,18 @@ function simpsIrregular1D(y::AbstractVector{<:Number},x::AbstractVector{<:Real})
 	return int_y
 end
 
-function simpsIrregular1D!(y::AbstractVector{<:Number},
-	int_y::AbstractArray{T},x::AbstractVector{<:Real}) where {T<:Number}
+function simpsIrregular1D!(y::AbstractVector,
+	int_y::AbstractArray{<:Any,0},x::AbstractVector)
 
-	@assert(isodd(length(y)),"The array should have an odd number of elements")
-	@assert(length(x)==length(y),"y and x need to have the same number of elements")
-
-	fill!(int_y,zero(T))
-
-	y_no_offset = OffsetArrays.no_offset_view(y)
-	x_no_offset = OffsetArrays.no_offset_view(x)
-
-	# The strategy is to fit a quadratic to three points, and compute its integral
-	coeffs = zeros(T,3)
-
-	for ind in 1:2:length(x)-2
-
-		int_y .+= quadratic_fit_integrate!(coeffs,view(y_no_offset,ind:ind+2),
-						view(x_no_offset,ind:ind+2))
-	end
+	int_y[] = simpsIrregular1D(y,x)
 
 	return first(int_y)
 end
 
 # N dimensional array, integrate along the first axis
-function simpsIrregular1D(y::AbstractArray{<:Number},x::AbstractVector{<:Real})
+function simpsIrregular1D(y::AbstractArray{TY},x::AbstractVector{TX}) where {TY,TX}
 
-	T = promote_type(eltype(y),Float64)
+	T = promote_type(TY,TX)
 	trailing_axes,inds = trailing_indices(y)
 	int_y = zeros(T,inds)
 
@@ -390,7 +359,6 @@ function simpsCircle(y::AbstractVector{<:Number},
 		push!(y,y[1])
 
 		z = simps(y,x=push!(ϕ,2π),even=even)
-
 	end
 
 	return z 
