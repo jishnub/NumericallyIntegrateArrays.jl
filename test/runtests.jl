@@ -2,7 +2,7 @@ using Test
 using NumericallyIntegrateArrays
 
 @testset "simps" begin
-    x = range(0,π,length=10); dx = step(x)
+    x = range(0,stop=π,length=10); dx = step(x)
 
     @testset "dx" begin
 	    @testset "1D" begin
@@ -27,7 +27,7 @@ using NumericallyIntegrateArrays
 end
 
 @testset "trapz" begin
-    x = range(0,π,length=10); dx = step(x)
+    x = range(0,stop=π,length=10); dx = step(x)
 
     @testset "dx" begin
 	    @testset "1D" begin
